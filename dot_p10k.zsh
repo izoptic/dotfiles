@@ -23,6 +23,7 @@
   # Line 1: dir + git (left), languages (right)
   # Line 2: prompt character (left), nothing (right)
   typeset -g POWERLEVEL9K_LEFT_PROMPT_ELEMENTS=(
+    context
     dir
     vcs
     newline
@@ -71,6 +72,14 @@
 
   # Add a blank line before each prompt.
   typeset -g POWERLEVEL9K_PROMPT_ADD_NEWLINE=true
+
+  ##############################################################################
+  # Hostname (context) — Tokyo Night cyan, hostname only
+  ##############################################################################
+
+  typeset -g POWERLEVEL9K_CONTEXT_FOREGROUND='#7dcfff'
+  typeset -g POWERLEVEL9K_CONTEXT_{DEFAULT,SUDO}_CONTENT_EXPANSION='%m'
+  typeset -g POWERLEVEL9K_ALWAYS_SHOW_CONTEXT=true
 
   ##############################################################################
   # Directory — bold Tokyo Night blue
