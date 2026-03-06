@@ -1,0 +1,16 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+set -euo pipefail
+
+echo "Installing Linux packages..."
+
+sudo apt-get update -qq
+sudo apt-get install -y -qq fzf zoxide zsh ripgrep fd-find bat eza jq tldr
+
+# fd-find and bat install as fdfind/batcat on Debian — symlink to expected names
+mkdir -p "$HOME/.local/bin"
+[[ -x /usr/bin/fdfind ]] && ! command -v fd &>/dev/null && ln -sf /usr/bin/fdfind "$HOME/.local/bin/fd"
+[[ -x /usr/bin/batcat ]] && ! command -v bat &>/dev/null && ln -sf /usr/bin/batcat "$HOME/.local/bin/bat"
+
+echo "Linux packages installed."
+{{- end }}

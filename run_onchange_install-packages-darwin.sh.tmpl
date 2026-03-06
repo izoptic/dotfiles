@@ -4,7 +4,7 @@ set -euo pipefail
 
 echo "Installing macOS packages via Homebrew..."
 
-brew install fzf zoxide chezmoi
+brew install fzf zoxide chezmoi ripgrep fd bat eza jq tealdeer
 
 # Miniconda (for base env)
 if ! brew list --cask miniconda &>/dev/null; then
