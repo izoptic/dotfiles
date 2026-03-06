@@ -27,5 +27,8 @@ mkdir -p "$HOME/.local/bin"
 [[ -x /usr/bin/fdfind ]] && ! command -v fd &>/dev/null && ln -sf /usr/bin/fdfind "$HOME/.local/bin/fd"
 [[ -x /usr/bin/batcat ]] && ! command -v bat &>/dev/null && ln -sf /usr/bin/batcat "$HOME/.local/bin/bat"
 
+# Fetch tldr pages
+command -v tldr &>/dev/null && tldr --update
+
 echo "Linux packages installed."
 {{- end }}

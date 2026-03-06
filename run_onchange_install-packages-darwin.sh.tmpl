@@ -17,5 +17,8 @@ if command -v chezmoi &>/dev/null && [[ -f "$HOME/.local/bin/chezmoi" ]]; then
     rm -f "$HOME/.local/bin/chezmoi"
 fi
 
+# Fetch tldr pages
+tldr --update
+
 echo "macOS packages installed."
 {{- end }}

@@ -39,11 +39,11 @@ fi
 # Command aliases
 ###############################################################################
 
-alias ls='eza --icons=always --color=always'
-alias ll='eza --icons=always --color=always -l'
-alias la='eza --icons=always --color=always -la'
-alias l='eza --icons=always --color=always'
-alias tree='eza --icons=always --color=always --tree'
+alias ls='eza --icons=auto'
+alias ll='eza --icons=auto -l'
+alias la='eza --icons=auto -la'
+alias l='eza --icons=auto'
+alias tree='eza --icons=auto --tree'
 
 alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'
@@ -155,3 +155,6 @@ zinit ice depth=1
 zinit light romkatv/powerlevel10k
 
 [[ -r ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# Re-enable aliases (p10k disables them during init)
+setopt ALIASES
