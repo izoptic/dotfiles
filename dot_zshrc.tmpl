@@ -113,6 +113,22 @@ compdef _conda conda
 
 {{ end -}}
 ###############################################################################
+# Chezmoi helpers
+###############################################################################
+
+chezmoi() {
+  if [[ "$1" == "push" ]]; then
+    shift
+    local msg="${*:-update dotfiles}"
+    command chezmoi git add -- -A && \
+    command chezmoi git commit -- -m "$msg" && \
+    command chezmoi git push
+  else
+    command chezmoi "$@"
+  fi
+}
+
+###############################################################################
 # Zoxide (replaces cd)
 ###############################################################################
 
