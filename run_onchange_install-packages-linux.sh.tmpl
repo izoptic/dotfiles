@@ -5,7 +5,22 @@ set -euo pipefail
 echo "Installing Linux packages..."
 
 sudo apt-get update -qq
-sudo apt-get install -y -qq fzf zoxide zsh ripgrep fd-find bat eza jq tldr
+sudo apt-get install -y -qq fzf zoxide zsh ripgrep fd-find bat eza jq
+
+# tealdeer (tldr client) — not in all Debian repos, install binary from GitHub
+if ! command -v tldr &>/dev/null; then
+    echo "Installing tealdeer..."
+    local_arch=$(uname -m)
+    case "$local_arch" in
+        x86_64)  tldr_arch="x86_64" ;;
+        aarch64) tldr_arch="aarch64" ;;
+        *) echo "Warning: unsupported arch $local_arch, skipping tealdeer"; tldr_arch="" ;;
+    esac
+    if [[ -n "$tldr_arch" ]]; then
+        curl -fsSL "https://github.com/tealdeer-rs/tealdeer/releases/latest/download/tealdeer-linux-${tldr_arch}-musl" -o "$HOME/.local/bin/tldr"
+        chmod +x "$HOME/.local/bin/tldr"
+    fi
+fi
 
 # fd-find and bat install as fdfind/batcat on Debian — symlink to expected names
 mkdir -p "$HOME/.local/bin"
