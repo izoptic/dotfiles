@@ -1,0 +1,129 @@
+export PATH=$HOME/.local/bin:$PATH
+
+###############################################################################
+# Detect macOS Homebrew path (Linux uses APT)
+###############################################################################
+
+if [[ "$OSTYPE" == darwin* ]]; then
+    # macOS Homebrew (Intel + Apple Silicon)
+    : ${HOMEBREW_PREFIX:=$(brew --prefix 2>/dev/null)}
+    # Homebrew zsh completions
+    [[ -n "$HOMEBREW_PREFIX" ]] && fpath=("$HOMEBREW_PREFIX/share/zsh/site-functions" $fpath)
+fi
+
+##############################################################################
+# Load fzf keybindings (fzf already installed)
+###############################################################################
+
+# macOS Homebrew fzf
+if [[ -n "$HOMEBREW_PREFIX" ]] && [[ -r "$HOMEBREW_PREFIX/opt/fzf/shell/key-bindings.zsh" ]]; then
+    source "$HOMEBREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
+
+# Debian/Ubuntu fzf
+elif [[ -r "/usr/share/doc/fzf/examples/key-bindings.zsh" ]]; then
+    source "/usr/share/doc/fzf/examples/key-bindings.zsh"
+fi
+
+###############################################################################
+# Command aliases
+###############################################################################
+
+{{ if eq .chezmoi.os "darwin" -}}
+export CLICOLOR=1
+alias ls='ls -G'
+{{ else -}}
+alias ls='ls --color=auto'
+{{ end -}}
+alias ll='ls -l'
+alias la='ls -la'
+alias l='ls -CF'
+
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+
+alias diff='diff --color=auto'
+
+alias psg='ps aux | grep --color=auto -i'
+
+export LESS='-R'
+
+alias tree='tree -C'
+
+###############################################################################
+# Install Zinit automatically if missing
+###############################################################################
+
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33}Installing Zinit…%f"
+    mkdir -p "$HOME/.local/share/zinit"
+    chmod g-rwX "$HOME/.local/share/zinit"
+    git clone https://github.com/zdharma-continuum/zinit \
+        "$HOME/.local/share/zinit/zinit.git"
+fi
+
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+###############################################################################
+# Plugins
+###############################################################################
+
+# fzf-tab - replaces zsh-completion
+zinit ice lucid atload"zicompinit; zicdreplay"
+zinit light Aloxaf/fzf-tab
+
+# Autosuggestions & Syntax Highlighting
+# Loaded synchronously — turbo/deferred loading causes prompt redraw bugs
+# with multi-line prompts (cursor eats lines on failed Tab completion).
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#737aa2'
+zinit ice lucid atload'_zsh_autosuggest_start'
+zinit light zsh-users/zsh-autosuggestions
+
+zinit ice lucid
+zinit light zsh-users/zsh-syntax-highlighting
+
+{{ if eq .chezmoi.os "darwin" -}}
+###############################################################################
+# Conda (lazy-loaded — initializes on first `conda` or `mamba` call)
+###############################################################################
+
+CONDA_BASE='/opt/homebrew/Caskroom/miniconda/base'
+
+conda() {
+  unfunction conda mamba 2>/dev/null
+  eval "$("$CONDA_BASE/bin/conda" 'shell.zsh' 'hook')"
+  conda "$@"
+}
+mamba() { conda; mamba "$@"; }
+
+_conda() {
+  local -a subcmds
+  subcmds=(activate deactivate create env info install list remove run update)
+  if (( CURRENT == 2 )); then
+    _describe 'command' subcmds
+  elif [[ "$words[2]" == activate ]] && (( CURRENT == 3 )); then
+    local -a envs=(base)
+    [[ -d "$CONDA_BASE/envs" ]] && envs+=(${(f)"$(command ls "$CONDA_BASE/envs" 2>/dev/null)"})
+    _describe 'environment' envs
+  fi
+}
+compdef _conda conda
+
+{{ end -}}
+###############################################################################
+# Zoxide (replaces cd)
+###############################################################################
+
+export _ZO_DOCTOR=0
+eval "$(zoxide init zsh --cmd cd)"
+
+###############################################################################
+# Prompt (Powerlevel10k)
+###############################################################################
+
+zinit ice depth=1
+zinit light romkatv/powerlevel10k
+
+[[ -r ~/.p10k.zsh ]] && source ~/.p10k.zsh

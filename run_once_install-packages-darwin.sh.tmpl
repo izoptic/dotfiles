@@ -1,0 +1,21 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/bash
+set -euo pipefail
+
+echo "Installing macOS packages via Homebrew..."
+
+brew install fzf zoxide chezmoi
+
+# Miniconda (for base env)
+if ! brew list --cask miniconda &>/dev/null; then
+    brew install --cask miniconda
+fi
+
+# Remove bootstrap binary if Homebrew version is now available
+if command -v chezmoi &>/dev/null && [[ -f "$HOME/.local/bin/chezmoi" ]]; then
+    echo "Removing bootstrap chezmoi binary..."
+    rm -f "$HOME/.local/bin/chezmoi"
+fi
+
+echo "macOS packages installed."
+{{- end }}

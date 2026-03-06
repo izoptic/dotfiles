@@ -1,0 +1,11 @@
+{{- if eq .chezmoi.os "linux" -}}
+#!/bin/bash
+set -euo pipefail
+
+echo "Installing Linux packages..."
+
+sudo apt-get update -qq
+sudo apt-get install -y -qq fzf zoxide zsh
+
+echo "Linux packages installed."
+{{- end }}

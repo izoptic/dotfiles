@@ -1,0 +1,6 @@
+{{ if ne .chezmoi.os "darwin" }}
+.config/wezterm
+.config/wezterm/wezterm.lua
+.config/zed
+.config/zed/settings.json
+{{ end }}

@@ -1,0 +1,7 @@
+{{- $context := "" -}}
+{{- if stdinIsATTY -}}
+{{-   $context = promptStringOnce . "context" "Machine context (personal/work)" -}}
+{{- end -}}
+
+[data]
+  context = {{ $context | quote }}
