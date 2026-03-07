@@ -1,19 +1,12 @@
--- Pull in the wezterm API
 local wezterm = require 'wezterm'
-
--- This will hold the configuration.
 local config = wezterm.config_builder()
 
--- This is where you actually apply your config choices.
-
--- For example, changing the initial geometry for new windows:
 config.initial_cols = 120
 config.initial_rows = 28
 
--- or, changing the font, font size and color scheme.
 config.font = wezterm.font 'Cousine Nerd Font'
 config.font_size = 15
--- config.color_scheme = 'Tokyo Night Storm'
+config.line_height = 1.1
 
 function get_appearance()
     if wezterm.gui then
@@ -42,13 +35,19 @@ config.colors = {
     split = '#565f89',
 }
 
+config.inactive_pane_hsb = {
+    saturation = 0.8,
+    brightness = 0.8,
+}
+
 config.send_composed_key_when_left_alt_is_pressed = true
 config.send_composed_key_when_right_alt_is_pressed = true
+
+config.scrollback_lines = 100000
 
 config.enable_tab_bar = false
 
 config.keys = {
-    -- This will create a new split and run your default program inside it
     {
         key = 'RightArrow',
         mods = 'OPT|CMD',
@@ -58,8 +57,27 @@ config.keys = {
         key = 'UpArrow',
         mods = 'OPT|CMD',
         action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' },
+    },
+    {
+        key = 'LeftArrow',
+        mods = 'CMD',
+        action = wezterm.action.ActivatePaneDirection 'Left',
+    },
+    {
+        key = 'RightArrow',
+        mods = 'CMD',
+        action = wezterm.action.ActivatePaneDirection 'Right',
+    },
+    {
+        key = 'UpArrow',
+        mods = 'CMD',
+        action = wezterm.action.ActivatePaneDirection 'Up',
+    },
+    {
+        key = 'DownArrow',
+        mods = 'CMD',
+        action = wezterm.action.ActivatePaneDirection 'Down',
     }
 }
 
--- Finally, return the configuration to wezterm:
 return config

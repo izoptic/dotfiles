@@ -36,6 +36,14 @@ elif [[ -r "/usr/share/doc/fzf/examples/key-bindings.zsh" ]]; then
 fi
 
 ###############################################################################
+# Key bindings
+###############################################################################
+
+bindkey '\e[1;3D' backward-word     # Option+Left
+bindkey '\e[1;3C' forward-word      # Option+Right
+bindkey ' ' magic-space             # Expand history on Space
+
+###############################################################################
 # Command aliases
 ###############################################################################
 
