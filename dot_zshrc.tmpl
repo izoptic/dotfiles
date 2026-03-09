@@ -140,6 +140,37 @@ chezmoi() {
   if [[ "$1" == "push" ]]; then
     shift
     local msg="${*:-update dotfiles}"
+
+    # Sync live configs back into chezmoi source
+    local has_template_diff=false
+    local diff_output
+    diff_output="$(command chezmoi diff 2>/dev/null)"
+    [[ -z "$diff_output" ]] && { echo "No changes to push."; return 0; }
+
+    # Extract changed target paths from diff
+    local -a changed_files
+    changed_files=("${(@f)$(echo "$diff_output" | grep '^diff --git' | sed 's|.*b/||')}")
+
+    for f in "${changed_files[@]}"; do
+      local target="$HOME/$f"
+      local src
+      src="$(command chezmoi source-path "$target" 2>/dev/null)" || continue
+
+      if [[ "$src" == *.tmpl ]]; then
+        has_template_diff=true
+        echo "\n>>> Templated file changed: $f"
+        command chezmoi diff "$target"
+        echo ">>> Edit template: $src\n"
+      else
+        command chezmoi add "$target"
+      fi
+    done
+
+    if $has_template_diff; then
+      echo "Please update the template(s) above, then run 'chezmoi push' again."
+      return 1
+    fi
+
     command chezmoi git add -- -A && \
     command chezmoi git commit -- -m "$msg" && \
     command chezmoi git push

@@ -7,29 +7,38 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "terminal": {
+    "font_family": "Cousine Nerd Font",
+    "shell": {
+      "with_arguments": {
+        "program": "/bin/zsh",
+        "args": ["-i", "-l"],
+      },
+    },
+  },
 {{- if eq .context "work" }}
   "edit_predictions": {
     "mode": "eager",
-    "provider": "copilot"
+    "provider": "copilot",
   },
   "agent": {
     "model_parameters": [],
     "default_model": {
       "provider": "copilot_chat",
-      "model": "gpt-4.1"
-    }
+      "model": "gpt-4.1",
+    },
   },
 {{- else }}
   "edit_predictions": {
     "mode": "subtle",
-    "provider": "zed"
+    "provider": "zed",
   },
   "agent": {
     "model_parameters": [],
     "default_model": {
       "provider": "openai",
-      "model": "gpt-4.1"
-    }
+      "model": "gpt-4.1",
+    },
   },
 {{- end }}
   "text_rendering_mode": "platform_default",
@@ -44,6 +53,6 @@
   "theme": {
     "mode": "system",
     "light": "Tokyo Night Storm",
-    "dark": "Tokyo Night"
-  }
+    "dark": "Tokyo Night",
+  },
 }
