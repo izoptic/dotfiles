@@ -77,6 +77,11 @@ config.keys = {
         key = 'DownArrow',
         mods = 'CMD',
         action = wezterm.action.ActivatePaneDirection 'Down',
+    },
+    {
+        key = "Enter",
+        mods = "SHIFT",
+        action = wezterm.action.SendString("\n"),
     }
 }
 
