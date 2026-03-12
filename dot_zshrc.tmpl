@@ -1,4 +1,4 @@
-export PATH=$HOME/.local/bin:$PATH
+export PATH=$HOME/.local/bin:$HOME/.cargo/bin:$PATH
 
 ###############################################################################
 # History
@@ -145,30 +145,37 @@ chezmoi() {
     local has_template_diff=false
     local diff_output
     diff_output="$(command chezmoi diff 2>/dev/null)"
-    [[ -z "$diff_output" ]] && { echo "No changes to push."; return 0; }
 
-    # Extract changed target paths from diff
-    local -a changed_files
-    changed_files=("${(@f)$(echo "$diff_output" | grep '^diff --git' | sed 's|.*b/||')}")
+    # Also check for direct edits to the source repo (e.g. template files)
+    local source_dirty
+    source_dirty="$(command chezmoi git -- status --porcelain 2>/dev/null)"
 
-    for f in "${changed_files[@]}"; do
-      local target="$HOME/$f"
-      local src
-      src="$(command chezmoi source-path "$target" 2>/dev/null)" || continue
+    [[ -z "$diff_output" && -z "$source_dirty" ]] && { echo "No changes to push."; return 0; }
 
-      if [[ "$src" == *.tmpl ]]; then
-        has_template_diff=true
-        echo "\n>>> Templated file changed: $f"
-        command chezmoi diff "$target"
-        echo ">>> Edit template: $src\n"
-      else
-        command chezmoi add "$target"
+    # Process target-side changes (non-template files get added back)
+    if [[ -n "$diff_output" ]]; then
+      local -a changed_files
+      changed_files=("${(@f)$(echo "$diff_output" | grep '^diff --git' | sed 's|.*b/||')}")
+
+      for f in "${changed_files[@]}"; do
+        local target="$HOME/$f"
+        local src
+        src="$(command chezmoi source-path "$target" 2>/dev/null)" || continue
+
+        if [[ "$src" == *.tmpl ]]; then
+          has_template_diff=true
+          echo "\n>>> Templated file changed: $f"
+          command chezmoi diff "$target"
+          echo ">>> Edit template: $src\n"
+        else
+          command chezmoi add "$target"
+        fi
+      done
+
+      if $has_template_diff; then
+        echo "Please update the template(s) above, then run 'chezmoi push' again."
+        return 1
       fi
-    done
-
-    if $has_template_diff; then
-      echo "Please update the template(s) above, then run 'chezmoi push' again."
-      return 1
     fi
 
     command chezmoi git add -- -A && \
