@@ -46,6 +46,7 @@ config.send_composed_key_when_right_alt_is_pressed = true
 config.scrollback_lines = 100000
 
 config.enable_tab_bar = false
+config.enable_kitty_keyboard = true
 
 config.keys = {
     {
