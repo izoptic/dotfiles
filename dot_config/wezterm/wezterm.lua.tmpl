@@ -3,8 +3,8 @@ local wezterm = require 'wezterm'
 local config = wezterm.config_builder()
 
 config.font = wezterm.font 'Cousine Nerd Font'
-config.font_size = 15
-config.line_height = 1.1
+config.font_size = 14
+config.line_height = 1
 
 {{ if eq .chezmoi.hostname "nyx" -}}
 wezterm.on('gui-startup', function(cmd)

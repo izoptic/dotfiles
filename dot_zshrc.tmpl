@@ -72,6 +72,13 @@ alias egrep='egrep --color=auto'
 alias fgrep='fgrep --color=auto'
 
 alias diff='diff --color=auto'
+{{- if and (eq .chezmoi.os "linux") (eq .chezmoi.osRelease.id "arch") }}
+
+# Arch's vim package does not provide a vi executable.
+if command -v vim >/dev/null 2>&1; then
+    alias vi='vim'
+fi
+{{- end }}
 
 alias cat='bat --paging=never'
 alias less='bat'
