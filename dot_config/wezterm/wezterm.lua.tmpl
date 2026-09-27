@@ -6,6 +6,19 @@ config.font = wezterm.font 'Cousine Nerd Font'
 config.font_size = 14
 config.line_height = 1
 
+-- Match the dark Tokyo Night palette used on the macOS machine.
+config.color_scheme = 'Tokyo Night'
+config.colors = {
+  cursor_bg = '#f7768e',
+  cursor_fg = '#1a1b26',
+  cursor_border = '#f7768e',
+  split = '#565f89',
+}
+config.inactive_pane_hsb = {
+  saturation = 0.8,
+  brightness = 0.8,
+}
+
 {{ if eq .chezmoi.hostname "nyx" -}}
 wezterm.on('gui-startup', function(cmd)
   local _, _, window = wezterm.mux.spawn_window(cmd or {})
