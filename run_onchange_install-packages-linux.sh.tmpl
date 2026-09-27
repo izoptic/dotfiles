@@ -2,32 +2,34 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "Installing Linux packages..."
-
+{{- if eq .chezmoi.osRelease.id "arch" }}
+echo "Installing Arch Linux packages via pacman..."
+# Do not refresh package databases without a full system upgrade (pacman -Syu).
+# The operator controls when to update Arch/BlackArch before applying chezmoi.
+sudo pacman -S --needed zsh fzf zoxide ripgrep fd bat eza jq tealdeer chezmoi git
+{{- else if or (eq .chezmoi.osRelease.id "debian") (eq .chezmoi.osRelease.id "ubuntu") }}
+echo "Installing Debian/Ubuntu packages via apt..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq fzf zoxide zsh ripgrep fd-find bat eza jq
+sudo apt-get install -y -qq fzf zoxide zsh ripgrep fd-find bat eza jq git
 
-# tealdeer (tldr client) — not in all Debian repos, install binary from GitHub
-if ! command -v tldr &>/dev/null; then
-    echo "Installing tealdeer..."
-    local_arch=$(uname -m)
-    case "$local_arch" in
-        x86_64)  tldr_arch="x86_64" ;;
-        aarch64) tldr_arch="aarch64" ;;
-        *) echo "Warning: unsupported arch $local_arch, skipping tealdeer"; tldr_arch="" ;;
-    esac
-    if [[ -n "$tldr_arch" ]]; then
-        curl -fsSL "https://github.com/tealdeer-rs/tealdeer/releases/latest/download/tealdeer-linux-${tldr_arch}-musl" -o "$HOME/.local/bin/tldr"
-        chmod +x "$HOME/.local/bin/tldr"
-    fi
+# tealdeer is not available in every Debian/Ubuntu release; avoid unchecked
+# downloads from a moving GitHub release when the package is absent.
+if apt-cache show tealdeer &>/dev/null; then
+    sudo apt-get install -y -qq tealdeer
+else
+    echo "tealdeer is unavailable in apt; install it separately for tldr." >&2
 fi
 
-# fd-find and bat install as fdfind/batcat on Debian — symlink to expected names
+# Debian packages fd-find and bat under different binary names.
 mkdir -p "$HOME/.local/bin"
 [[ -x /usr/bin/fdfind ]] && ! command -v fd &>/dev/null && ln -sf /usr/bin/fdfind "$HOME/.local/bin/fd"
 [[ -x /usr/bin/batcat ]] && ! command -v bat &>/dev/null && ln -sf /usr/bin/batcat "$HOME/.local/bin/bat"
+{{- else }}
+echo "Unsupported Linux distribution; supported: Arch, Debian, Ubuntu." >&2
+exit 1
+{{- end }}
 
-# Fetch tldr pages
+# Fetch tldr pages when a client is available.
 command -v tldr &>/dev/null && tldr --update
 
 echo "Linux packages installed."

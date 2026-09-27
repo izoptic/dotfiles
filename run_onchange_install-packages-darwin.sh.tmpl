@@ -5,6 +5,10 @@ set -euo pipefail
 echo "Installing macOS packages via Homebrew..."
 
 brew install fzf zoxide chezmoi ripgrep fd bat eza jq tealdeer
+{{- if eq .context "personal" }}
+# Required by the personal shell setup (qmd / sqlite-vec).
+brew install sqlite
+{{- end }}
 
 # Miniconda (for base env)
 if ! brew list --cask miniconda &>/dev/null; then

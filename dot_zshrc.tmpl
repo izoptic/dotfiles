@@ -22,6 +22,15 @@ if [[ "$OSTYPE" == darwin* ]]; then
     # Homebrew zsh completions
     [[ -n "$HOMEBREW_PREFIX" ]] && fpath=("$HOMEBREW_PREFIX/share/zsh/site-functions" $fpath)
 fi
+{{- if and (eq .chezmoi.os "darwin") (eq .context "personal") }}
+
+# Homebrew keg-only SQLite (qmd / sqlite-vec need extension loading support)
+if [[ -n "$HOMEBREW_PREFIX" && -x "$HOMEBREW_PREFIX/opt/sqlite/bin/sqlite3" ]]; then
+    export PATH="$HOMEBREW_PREFIX/opt/sqlite/bin:$PATH"
+    export LDFLAGS="-L$HOMEBREW_PREFIX/opt/sqlite/lib${LDFLAGS:+ $LDFLAGS}"
+    export CPPFLAGS="-I$HOMEBREW_PREFIX/opt/sqlite/include${CPPFLAGS:+ $CPPFLAGS}"
+fi
+{{- end }}
 
 ##############################################################################
 # Load fzf keybindings (fzf already installed)
@@ -30,6 +39,10 @@ fi
 # macOS Homebrew fzf
 if [[ -n "$HOMEBREW_PREFIX" ]] && [[ -r "$HOMEBREW_PREFIX/opt/fzf/shell/key-bindings.zsh" ]]; then
     source "$HOMEBREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
+
+# Arch Linux fzf
+elif [[ -r "/usr/share/fzf/key-bindings.zsh" ]]; then
+    source "/usr/share/fzf/key-bindings.zsh"
 
 # Debian/Ubuntu fzf
 elif [[ -r "/usr/share/doc/fzf/examples/key-bindings.zsh" ]]; then
@@ -110,27 +123,29 @@ zinit light zsh-users/zsh-syntax-highlighting
 # Conda (lazy-loaded — initializes on first `conda` or `mamba` call)
 ###############################################################################
 
-CONDA_BASE='/opt/homebrew/Caskroom/miniconda/base'
+if [[ -n "$HOMEBREW_PREFIX" && -x "$HOMEBREW_PREFIX/Caskroom/miniconda/base/bin/conda" ]]; then
+  CONDA_BASE="$HOMEBREW_PREFIX/Caskroom/miniconda/base"
 
-conda() {
-  unfunction conda mamba 2>/dev/null
-  eval "$("$CONDA_BASE/bin/conda" 'shell.zsh' 'hook')"
-  conda "$@"
-}
-mamba() { conda; mamba "$@"; }
+  conda() {
+    unfunction conda mamba 2>/dev/null
+    eval "$("$CONDA_BASE/bin/conda" 'shell.zsh' 'hook')"
+    conda "$@"
+  }
+  mamba() { conda; mamba "$@"; }
 
-_conda() {
-  local -a subcmds
-  subcmds=(activate deactivate create env info install list remove run update)
-  if (( CURRENT == 2 )); then
-    _describe 'command' subcmds
-  elif [[ "$words[2]" == activate ]] && (( CURRENT == 3 )); then
-    local -a envs=(base)
-    [[ -d "$CONDA_BASE/envs" ]] && envs+=(${(f)"$(command ls "$CONDA_BASE/envs" 2>/dev/null)"})
-    _describe 'environment' envs
-  fi
-}
-compdef _conda conda
+  _conda() {
+    local -a subcmds
+    subcmds=(activate deactivate create env info install list remove run update)
+    if (( CURRENT == 2 )); then
+      _describe 'command' subcmds
+    elif [[ "$words[2]" == activate ]] && (( CURRENT == 3 )); then
+      local -a envs=(base)
+      [[ -d "$CONDA_BASE/envs" ]] && envs+=(${(f)"$(command ls "$CONDA_BASE/envs" 2>/dev/null)"})
+      _describe 'environment' envs
+    fi
+  }
+  compdef _conda conda
+fi
 
 {{ end -}}
 ###############################################################################

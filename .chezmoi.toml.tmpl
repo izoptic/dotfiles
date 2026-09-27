@@ -1,6 +1,13 @@
-{{- $context := "" -}}
-{{- if stdinIsATTY -}}
-{{-   $context = promptStringOnce . "context" "Machine context (personal/work)" -}}
+{{- $context := env "CHEZMOI_CONTEXT" -}}
+{{- if not $context -}}
+{{-   if stdinIsATTY -}}
+{{-     $context = promptChoiceOnce . "context" "Machine context" (list "personal" "work") -}}
+{{-   else -}}
+{{-     fail "Set CHEZMOI_CONTEXT=personal or work for noninteractive setup" -}}
+{{-   end -}}
+{{- end -}}
+{{- if not (has $context (list "personal" "work")) -}}
+{{-   fail "Machine context must be personal or work" -}}
 {{- end -}}
 
 [data]
