@@ -6,7 +6,7 @@ set -euo pipefail
 echo "Installing Arch Linux packages via pacman..."
 # Do not refresh package databases without a full system upgrade (pacman -Syu).
 # The operator controls when to update Arch/BlackArch before applying chezmoi.
-sudo pacman -S --needed zsh fzf zoxide ripgrep fd bat eza jq tealdeer chezmoi git
+sudo pacman -S --needed zsh fzf zoxide ripgrep fd bat eza jq tealdeer chezmoi git ttf-cousine-nerd
 {{- else if or (eq .chezmoi.osRelease.id "debian") (eq .chezmoi.osRelease.id "ubuntu") }}
 echo "Installing Debian/Ubuntu packages via apt..."
 sudo apt-get update -qq

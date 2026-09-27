@@ -1,7 +1,9 @@
 README.md
 {{ if ne .chezmoi.os "darwin" }}
-.config/wezterm
-.config/wezterm/wezterm.lua
 .config/zed
 .config/zed/settings.json
+{{ end }}
+{{ if and (ne .chezmoi.os "darwin") (ne .chezmoi.hostname "nyx") }}
+.config/wezterm
+.config/wezterm/wezterm.lua
 {{ end }}

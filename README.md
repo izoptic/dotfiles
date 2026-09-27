@@ -18,9 +18,9 @@ chezmoi status
 
 The repository is readable over HTTPS; no GitHub SSH key is needed. The Arch
 package script installs the shell utilities with `pacman -S --needed`; it does
-not install BlackArch tools. Zed
-and WezTerm configs are currently macOS-only. Chezmoi does not switch the login
-shell; change it to zsh separately if desired.
+not install BlackArch tools. Linux WezTerm keeps its maximize-on-start behavior
+and uses Cousine Nerd Font (`ttf-cousine-nerd`); Zed settings remain macOS-only.
+Chezmoi does not switch the login shell; change it to zsh separately if desired.
 
 ## macOS
 
