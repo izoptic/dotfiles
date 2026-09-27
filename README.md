@@ -12,12 +12,13 @@ suitable time before provisioning; the chezmoi script **does not** run
 
 ```sh
 sudo pacman -Syu --needed git chezmoi
-CHEZMOI_CONTEXT=personal chezmoi init --apply git@github.com:izoptic/dotfiles.git
+CHEZMOI_CONTEXT=personal chezmoi init --apply https://github.com/izoptic/dotfiles.git
 chezmoi status
 ```
 
-The clone needs GitHub SSH access. The Arch package script installs the shell
-utilities with `pacman -S --needed`; it does not install BlackArch tools. Zed
+The repository is readable over HTTPS; no GitHub SSH key is needed. The Arch
+package script installs the shell utilities with `pacman -S --needed`; it does
+not install BlackArch tools. Zed
 and WezTerm configs are currently macOS-only. Chezmoi does not switch the login
 shell; change it to zsh separately if desired.
 
