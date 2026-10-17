@@ -1,0 +1,151 @@
+{{- includeTemplate "validate-machine" . -}}
+{{- $zedEnabled := eq (includeTemplate "zed-enabled" .) "true" -}}
+#!/bin/bash
+# Idempotent dependency checks; package inventories come from .chezmoidata.
+set -euo pipefail
+
+case "${DOTFILES_ASSUME_YES:-0}" in
+    0) confirm='' ;;
+    1) confirm='--noconfirm' ;;
+    *) echo "DOTFILES_ASSUME_YES must be 0 or 1." >&2; exit 1 ;;
+esac
+
+as_root() {
+    if (( EUID == 0 )); then
+        "$@"
+    else
+        sudo -- "$@"
+    fi
+}
+
+{{ if eq .chezmoi.os "darwin" -}}
+if (( EUID == 0 )); then
+    echo "macOS provisioning must run as the desktop user, not root." >&2
+    exit 1
+fi
+if ! command -v brew &>/dev/null; then
+    echo "Homebrew is required; install it before applying." >&2
+    exit 1
+fi
+
+# Query once; do not upgrade already-installed formulas during a dotfile apply.
+installed_formulas="$(brew list --formula -1)"
+formulas=({{ range .packages.darwin.brews }}{{ . | quote }} {{ end }})
+{{ if eq .machine.scope "personal" -}}
+formulas+=({{ range .packages.darwin.personal_brews }}{{ . | quote }} {{ end }})
+{{ end -}}
+missing=()
+if (( ${#formulas[@]} )); then
+    for package in "${formulas[@]}"; do
+        if ! grep -Fxq -- "$package" <<< "$installed_formulas"; then
+            missing+=("$package")
+        fi
+    done
+fi
+if (( ${#missing[@]} )); then
+    HOMEBREW_NO_AUTO_UPDATE=1 brew install --formula "${missing[@]}"
+fi
+
+installed_casks="$(brew list --cask -1)"
+casks=({{ range .packages.darwin.casks }}{{ . | quote }} {{ end }})
+# Reuse existing manual installations rather than force-adopting/overwriting them.
+{{ if $zedEnabled -}}
+if [[ ! -d /Applications/Zed.app && ! -d "$HOME/Applications/Zed.app" ]]; then
+    casks+=({{ range .packages.darwin.zed_casks }}{{ . | quote }} {{ end }})
+fi
+{{ end -}}
+{{ if not .machine.headless -}}
+if [[ ! -f "$HOME/Library/Fonts/CousineNerdFont-Regular.ttf" && \
+      ! -f /Library/Fonts/CousineNerdFont-Regular.ttf ]]; then
+    casks+=({{ range .packages.darwin.font_casks }}{{ . | quote }} {{ end }})
+fi
+{{ end -}}
+missing=()
+if (( ${#casks[@]} )); then
+    for package in "${casks[@]}"; do
+        if ! grep -Fxq -- "${package##*/}" <<< "$installed_casks"; then
+            missing+=("$package")
+        fi
+    done
+fi
+if (( ${#missing[@]} )); then
+    HOMEBREW_NO_AUTO_UPDATE=1 brew install --cask "${missing[@]}"
+fi
+{{ else if eq .chezmoi.os "linux" -}}
+{{ if eq .chezmoi.osRelease.id "arch" -}}
+# Use the existing database: no -y, no automatic system upgrade.
+{{ if and (not .machine.headless) (not $zedEnabled) -}}
+echo "Skipping Zed: machine.vulkan={{ .machine.vulkan }}; Vulkan 1.3 or newer is required."
+{{ end -}}
+packages=({{ range .packages.arch.base }}{{ . | quote }} {{ end }}{{ if $zedEnabled }}{{ range .packages.arch.zed }}{{ . | quote }} {{ end }}{{ end }}{{ if not .machine.headless }}{{ range .packages.arch.fonts }}{{ . | quote }} {{ end }}{{ end }})
+missing=()
+if (( ${#packages[@]} )); then
+    for package in "${packages[@]}"; do
+        if ! pacman -Q "${package##*/}" &>/dev/null; then
+            # Zed's virtual Vulkan dependency can otherwise select a GPU driver
+            # implicitly. Driver selection is an explicit machine setup decision.
+            if [[ "$package" == extra/zed ]] && ! pacman -T vulkan-driver &>/dev/null; then
+                echo "Zed requires an installed Vulkan driver provider." >&2
+                echo "Choose the appropriate provider explicitly; refusing automatic graphics-driver selection." >&2
+                exit 1
+            fi
+            missing+=("$package")
+        fi
+    done
+fi
+if (( ${#missing[@]} )); then
+    # Optional scalar avoids empty-array expansion under macOS Bash 3.2 + nounset.
+    as_root pacman -S --needed ${confirm:+"$confirm"} "${missing[@]}"
+fi
+{{ else if or (eq .chezmoi.osRelease.id "debian") (eq .chezmoi.osRelease.id "ubuntu") -}}
+{{ if not .machine.headless -}}
+echo "Graphical Debian/Ubuntu provisioning is not yet supported." >&2
+echo "Official repository packages for the Zed editor and Cousine Nerd Font have not been verified." >&2
+echo "No packages changed. No third-party repository or upstream-download fallback will be used." >&2
+exit 1
+{{ else -}}
+packages=({{ range .packages.apt.base }}{{ . | quote }} {{ end }})
+missing=()
+if (( ${#packages[@]} )); then
+    for package in "${packages[@]}"; do
+        if [[ "$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)" != 'install ok installed' ]]; then
+            missing+=("$package")
+        fi
+    done
+fi
+if (( ${#missing[@]} )); then
+    as_root apt-get update -qq
+    as_root apt-get install -y -qq "${missing[@]}"
+fi
+optional=({{ range .packages.apt.optional }}{{ . | quote }} {{ end }})
+if (( ${#optional[@]} )); then
+    for package in "${optional[@]}"; do
+        if [[ "$(dpkg-query -W -f='${Status}' "$package" 2>/dev/null || true)" != 'install ok installed' ]]; then
+            if apt-cache show "$package" &>/dev/null; then
+                as_root apt-get install -y -qq "$package"
+            else
+                echo "$package is unavailable in apt; install it separately if needed." >&2
+            fi
+        fi
+    done
+fi
+
+# These user-local compatibility links are not root provisioning work.
+if (( EUID == 0 )); then
+    echo "Run apply as the desktop user to create any fd/bat compatibility links." >&2
+else
+    mkdir -p "$HOME/.local/bin"
+    if [[ -x /usr/bin/fdfind ]] && ! command -v fd &>/dev/null; then
+        ln -s /usr/bin/fdfind "$HOME/.local/bin/fd"
+    fi
+    if [[ -x /usr/bin/batcat ]] && ! command -v bat &>/dev/null; then
+        ln -s /usr/bin/batcat "$HOME/.local/bin/bat"
+    fi
+fi
+{{ end -}}
+{{ else -}}
+echo "Unsupported Linux distribution for provisioning; supported: Arch, Debian, Ubuntu." >&2
+exit 1
+{{ end -}}
+{{ end }}
+echo "Dotfile package dependencies are ready."

@@ -1,0 +1,193 @@
+{{- template "validate-machine" . -}}
+export GOPATH=$HOME/go
+export PATH=$HOME/.local/bin:$GOPATH/bin:$PATH
+
+###############################################################################
+# History
+###############################################################################
+
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt APPEND_HISTORY
+setopt HIST_IGNORE_DUPS
+setopt SHARE_HISTORY
+
+###############################################################################
+# Detect macOS Homebrew path
+###############################################################################
+
+if [[ "$OSTYPE" == darwin* ]]; then
+    # macOS Homebrew (Intel + Apple Silicon)
+    : ${HOMEBREW_PREFIX:=$(brew --prefix 2>/dev/null)}
+    # Homebrew zsh completions
+    [[ -n "$HOMEBREW_PREFIX" ]] && fpath=("$HOMEBREW_PREFIX/share/zsh/site-functions" $fpath)
+fi
+{{- if and (eq .chezmoi.os "darwin") (eq .machine.scope "personal") }}
+
+# Homebrew keg-only SQLite (qmd / sqlite-vec need extension loading support)
+if [[ -n "$HOMEBREW_PREFIX" && -x "$HOMEBREW_PREFIX/opt/sqlite/bin/sqlite3" ]]; then
+    export PATH="$HOMEBREW_PREFIX/opt/sqlite/bin:$PATH"
+    export LDFLAGS="-L$HOMEBREW_PREFIX/opt/sqlite/lib${LDFLAGS:+ $LDFLAGS}"
+    export CPPFLAGS="-I$HOMEBREW_PREFIX/opt/sqlite/include${CPPFLAGS:+ $CPPFLAGS}"
+fi
+{{- end }}
+
+##############################################################################
+# Load fzf keybindings (fzf already installed)
+###############################################################################
+
+# macOS Homebrew fzf
+if [[ -n "$HOMEBREW_PREFIX" ]] && [[ -r "$HOMEBREW_PREFIX/opt/fzf/shell/key-bindings.zsh" ]]; then
+    source "$HOMEBREW_PREFIX/opt/fzf/shell/key-bindings.zsh"
+
+# Arch Linux fzf
+elif [[ -r "/usr/share/fzf/key-bindings.zsh" ]]; then
+    source "/usr/share/fzf/key-bindings.zsh"
+
+# Debian/Ubuntu fzf
+elif [[ -r "/usr/share/doc/fzf/examples/key-bindings.zsh" ]]; then
+    source "/usr/share/doc/fzf/examples/key-bindings.zsh"
+fi
+
+###############################################################################
+# Key bindings
+###############################################################################
+
+bindkey '\e[1;3D' backward-word     # Option+Left
+bindkey '\e[1;3C' forward-word      # Option+Right
+bindkey ' ' magic-space             # Expand history on Space
+
+###############################################################################
+# Command aliases
+###############################################################################
+
+alias ls='eza --icons=auto'
+alias ll='eza --icons=auto -l'
+alias la='eza --icons=auto -la'
+alias l='eza --icons=auto'
+alias tree='eza --icons=auto --tree'
+
+alias grep='grep --color=auto'
+alias egrep='egrep --color=auto'
+alias fgrep='fgrep --color=auto'
+
+alias diff='diff --color=auto'
+
+alias cat='bat --paging=never'
+alias less='bat'
+
+alias psg='ps aux | grep --color=auto -i'
+
+export LESS='-R'
+
+export FZF_DEFAULT_COMMAND='fd --type f --hidden --exclude .git'
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_ALT_C_COMMAND='fd --type d --hidden --exclude .git'
+
+###############################################################################
+# Install Zinit automatically if missing
+###############################################################################
+
+if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
+    print -P "%F{33}Installing Zinit…%f"
+    mkdir -p "$HOME/.local/share/zinit"
+    chmod g-rwX "$HOME/.local/share/zinit"
+    git clone https://github.com/zdharma-continuum/zinit \
+        "$HOME/.local/share/zinit/zinit.git"
+fi
+
+source "$HOME/.local/share/zinit/zinit.git/zinit.zsh"
+autoload -Uz _zinit
+(( ${+_comps} )) && _comps[zinit]=_zinit
+
+###############################################################################
+# Plugins
+###############################################################################
+
+# fzf-tab - replaces zsh-completion
+zinit ice lucid atload"zicompinit; zicdreplay"
+zinit light Aloxaf/fzf-tab
+
+# Autosuggestions & Syntax Highlighting
+# Loaded synchronously — turbo/deferred loading causes prompt redraw bugs
+# with multi-line prompts (cursor eats lines on failed Tab completion).
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=#737aa2'
+zinit ice lucid atload'_zsh_autosuggest_start'
+zinit light zsh-users/zsh-autosuggestions
+
+zinit ice lucid
+zinit light zsh-users/zsh-syntax-highlighting
+
+{{ if eq .chezmoi.os "darwin" -}}
+###############################################################################
+# Conda (lazy-loaded — initializes on first `conda` or `mamba` call)
+###############################################################################
+
+if [[ -n "$HOMEBREW_PREFIX" && -x "$HOMEBREW_PREFIX/Caskroom/miniconda/base/bin/conda" ]]; then
+  CONDA_BASE="$HOMEBREW_PREFIX/Caskroom/miniconda/base"
+
+  conda() {
+    unfunction conda mamba 2>/dev/null
+    eval "$("$CONDA_BASE/bin/conda" 'shell.zsh' 'hook')"
+    conda "$@"
+  }
+  mamba() { conda; mamba "$@"; }
+
+  _conda() {
+    local -a subcmds
+    subcmds=(activate deactivate create env info install list remove run update)
+    if (( CURRENT == 2 )); then
+      _describe 'command' subcmds
+    elif [[ "$words[2]" == activate ]] && (( CURRENT == 3 )); then
+      local -a envs=(base)
+      [[ -d "$CONDA_BASE/envs" ]] && envs+=(${(f)"$(command ls "$CONDA_BASE/envs" 2>/dev/null)"})
+      _describe 'environment' envs
+    fi
+  }
+  compdef _conda conda
+fi
+
+{{ end -}}
+###############################################################################
+# Zoxide (replaces cd)
+###############################################################################
+
+export _ZO_DOCTOR=0
+eval "$(zoxide init zsh --cmd cd)"
+
+###############################################################################
+# Prompt (Powerlevel10k)
+###############################################################################
+
+zinit ice depth=1
+zinit light romkatv/powerlevel10k
+
+[[ -r ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# Re-enable aliases (p10k disables them during init)
+setopt ALIASES
+
+###############################################################################
+# Optional machine-local settings: applied last, never managed by chezmoi
+###############################################################################
+
+_dotfiles_local_zsh="${XDG_CONFIG_HOME:-$HOME/.config}/zsh/local.zsh"
+if [[ -e "$_dotfiles_local_zsh" || -L "$_dotfiles_local_zsh" ]]; then
+    if [[ ! -f "$_dotfiles_local_zsh" || ! -r "$_dotfiles_local_zsh" ]]; then
+        print -u2 -- "Cannot read local zsh configuration: $_dotfiles_local_zsh"
+        unset _dotfiles_local_zsh
+        return 1
+    fi
+    # Do not put source in a conditional: that would disable ERR_RETURN in it.
+    {
+        source "$_dotfiles_local_zsh"
+    } always {
+        if (( $? != 0 )); then
+            print -u2 -- "Failed to load local zsh configuration: $_dotfiles_local_zsh"
+            unset _dotfiles_local_zsh
+            return 1
+        fi
+    }
+fi
+unset _dotfiles_local_zsh

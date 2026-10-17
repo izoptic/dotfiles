@@ -1,0 +1,16 @@
+# Private engineering material belongs in the parent working directory.
+/tests/
+/docs/
+/provision/
+
+# Editor/OS noise.
+.DS_Store
+
+# Defense in depth: local profiles and fragments must not be committed.
+chezmoi.toml
+**/chezmoi/
+**/private_chezmoi/
+**/zsh/*local.zsh*
+**/private_zsh/*local.zsh*
+**/wezterm/*local.lua*
+**/private_wezterm/*local.lua*

@@ -1,0 +1,53 @@
+# Package inventories only. Property selection and safe installation live in the
+# shared installer template; the native run_before_ hook checks on every apply.
+packages:
+  darwin:
+    brews:
+      - fzf
+      - zoxide
+      - chezmoi
+      - ripgrep
+      - fd
+      - bat
+      - eza
+      - jq
+      - tealdeer
+    personal_brews:
+      - sqlite
+    casks:
+      - homebrew/cask/miniconda
+    zed_casks:
+      - homebrew/cask/zed
+    font_casks:
+      - homebrew/cask/font-cousine-nerd-font
+  arch:
+    base:
+      - zsh
+      - fzf
+      - zoxide
+      - ripgrep
+      - fd
+      - bat
+      - eza
+      - jq
+      - tealdeer
+      - chezmoi
+      - git
+      - extra/ex-vi-compat
+    zed:
+      - extra/zed
+    fonts:
+      - extra/ttf-cousine-nerd
+  apt:
+    base:
+      - fzf
+      - zoxide
+      - zsh
+      - ripgrep
+      - fd-find
+      - bat
+      - eza
+      - jq
+      - git
+    optional:
+      - tealdeer

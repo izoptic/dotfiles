@@ -1,0 +1,33 @@
+{{- if not (hasKey . "machine") -}}
+{{-   fail "Missing [data.machine]: set scope, mobile, headless, and (on Linux) vulkan in your local chezmoi config" -}}
+{{- end -}}
+{{- if not (kindIs "map" .machine) -}}
+{{-   fail "data.machine must be a table" -}}
+{{- end -}}
+{{- range $key, $_ := .machine -}}
+{{-   if not (has $key (list "scope" "mobile" "headless" "vulkan")) -}}
+{{-     fail (printf "Unknown machine property %q; allowed: scope, mobile, headless, vulkan (OS and distro are detected)" $key) -}}
+{{-   end -}}
+{{- end -}}
+{{- if not (and (hasKey .machine "scope") (kindIs "string" .machine.scope) (has .machine.scope (list "personal" "work"))) -}}
+{{-   fail "machine.scope must be personal or work" -}}
+{{- end -}}
+{{- range $key := list "mobile" "headless" -}}
+{{-   if not (and (hasKey $.machine $key) (kindIs "bool" (get $.machine $key))) -}}
+{{-     fail (printf "machine.%s must be an explicit boolean (true or false)" $key) -}}
+{{-   end -}}
+{{- end -}}
+{{- if not (has .chezmoi.os (list "darwin" "linux")) -}}
+{{-   fail "Supported operating systems: darwin (macOS) and linux" -}}
+{{- end -}}
+{{- if eq .chezmoi.os "linux" -}}
+{{-   $release := get .chezmoi "osRelease" -}}
+{{-   if not (and (kindIs "map" $release) (hasKey $release "id") (kindIs "string" $release.id) (ne $release.id "")) -}}
+{{-     fail "Linux requires a detected distribution ID from /etc/os-release" -}}
+{{-   end -}}
+{{-   if not (and (hasKey .machine "vulkan") (kindIs "string" .machine.vulkan) (has .machine.vulkan (list "unknown" "none" "1.0" "1.1" "1.2" "1.3" "1.4"))) -}}
+{{-     fail "machine.vulkan must be an explicit string on Linux: unknown, none, 1.0, 1.1, 1.2, 1.3, or 1.4" -}}
+{{-   end -}}
+{{- else if hasKey .machine "vulkan" -}}
+{{-   fail "machine.vulkan is Linux-only; omit it on macOS (Zed uses Metal)" -}}
+{{- end -}}
