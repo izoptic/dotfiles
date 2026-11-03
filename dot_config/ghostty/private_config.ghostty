@@ -1,0 +1,58 @@
+# Eris Ghostty baseline, ported from the reviewed WezTerm configuration.
+# Uses Ghostty 1.4.0's scrollback options.
+# Native macOS tabs; custom scrollback and WezTerm pane shortcuts below.
+
+# Font and spacing (previously set in WezTerm local.lua).
+font-family = Cousine Nerd Font
+font-size = 15
+adjust-cell-height = 10%
+
+# Match the system's light/dark appearance selection.
+# Storm is intentionally a dark palette even when macOS is in light mode.
+theme = light:TokyoNight Storm,dark:TokyoNight
+
+# Cursor appearance. Preserve the underline at shell prompts too.
+# Applications can still request their own cursor style.
+cursor-style = underline
+cursor-style-blink = true
+# Add 4 pixels to the default cursor thickness (not an absolute size).
+# Underline cursors have supported this setting since Ghostty 1.2.
+adjust-cursor-thickness = 4
+cursor-color = #f7768e
+cursor-text = #1a1b26
+shell-integration-features = no-cursor
+
+# Split appearance. Dimming approximates WezTerm's HSB adjustments.
+split-divider-color = #565f89
+unfocused-split-opacity = 0.8
+
+# Initial dimensions in terminal cells.
+window-width = 120
+window-height = 28
+
+# Window padding
+window-padding-x = 6
+window-padding-y = 6
+
+# Preserve normal macOS Option-key character composition.
+macos-option-as-alt = false
+
+# Limit history by line count rather than the default secondary byte cap.
+# Ghostty trims at page boundaries, so the count is approximate.
+scrollback-limit-lines = 100000
+scrollback-limit-bytes = unlimited
+
+# Keep Ghostty's default cursor blink timing.
+# Kitty keyboard protocol support is built in; no enable switch is needed.
+
+# Scroll the buffer instead of extending a selection with Shift+Page Up/Down.
+keybind = shift+page_up=scroll_page_up
+keybind = shift+page_down=scroll_page_down
+
+# Preserve the user's preferred WezTerm split orientation and pane navigation.
+keybind = super+alt+arrow_right=new_split:down
+keybind = super+alt+arrow_up=new_split:right
+keybind = super+arrow_left=goto_split:left
+keybind = super+arrow_right=goto_split:right
+keybind = super+arrow_up=goto_split:up
+keybind = super+arrow_down=goto_split:down

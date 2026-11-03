@@ -8,6 +8,12 @@ README.md
 .config/zsh/local.zsh
 .config/wezterm/local.lua
 
+# Ghostty: one complete config for graphical personal macOS/Linux machines.
+{{ if or .machine.headless (ne .machine.scope "personal") }}
+.config/ghostty
+.config/ghostty/**
+{{ end }}
+
 # WezTerm needs a graphical session; Linux Zed additionally needs Vulkan >= 1.3.
 # One shared predicate keeps Zed configuration and provisioning in agreement.
 {{ if .machine.headless }}
