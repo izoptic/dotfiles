@@ -2,6 +2,11 @@
 # The public repository description is not a home-directory target.
 README.md
 
+# Homebrew login-shell setup is macOS-only.
+{{ if ne .chezmoi.os "darwin" }}
+.zprofile
+{{ end }}
+
 # Local-only configuration: never import it when adding a parent directory.
 .config/chezmoi
 .config/chezmoi/**
