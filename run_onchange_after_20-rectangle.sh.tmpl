@@ -1,0 +1,74 @@
+{{- template "validate-machine" . -}}
+{{- if and (eq .chezmoi.os "darwin") (eq .machine.scope "personal") (not .machine.headless) -}}
+{{- $profile := ternary "mobile" "desktop" .machine.mobile -}}
+#!/bin/sh
+# Stage Rectangle's supported startup import, never edit its live preferences.
+# Selected profile: {{ $profile }}. Embedded content participates in run_onchange.
+set -eu
+umask 077
+
+case "${1:-}" in
+    "") restage=0 ;;
+    --restage) restage=1 ;;
+    *) printf 'Usage: %s [--restage]\n' "$0" >&2; exit 2 ;;
+esac
+
+state="$HOME/.local/state/chezmoi-rectangle"
+stamp="$state/last-staged.sha256"
+support="$HOME/Library/Application Support/Rectangle"
+target="$support/RectangleConfig.json"
+mkdir -p "$state"
+candidate=$(mktemp "$state/candidate.XXXXXX")
+staging=
+stamp_temp=
+cleanup() {
+    rm -f "$candidate"
+    if [ -n "$staging" ]; then rm -f "$staging"; fi
+    if [ -n "$stamp_temp" ]; then rm -f "$stamp_temp"; fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+cat > "$candidate" <<'RECTANGLE_CONFIG_JSON'
+{{ includeTemplate (printf "rectangle/%s.json" $profile) . | trimSuffix "\n" }}
+RECTANGLE_CONFIG_JSON
+
+digest=$(shasum -a 256 "$candidate" | awk '{print $1}')
+previous=
+if [ -L "$stamp" ]; then
+    printf 'Refusing a symlinked Rectangle staging record: %s\n' "$stamp" >&2
+    exit 1
+fi
+if [ -f "$stamp" ]; then IFS= read -r previous < "$stamp"; fi
+if [ "$restage" -eq 0 ] && [ "$previous" = "$digest" ]; then
+    printf 'Rectangle: unchanged configuration; no new import staged.\n'
+    exit 0
+fi
+
+mkdir -p "$support"
+if [ -e "$target" ] || [ -L "$target" ]; then
+    if [ -L "$target" ] || [ ! -f "$target" ] || ! cmp -s "$candidate" "$target"; then
+        printf 'Refusing to replace an existing Rectangle import: %s\n' "$target" >&2
+        printf 'Review and import/discard that file before staging another configuration.\n' >&2
+        exit 1
+    fi
+    chmod 600 "$target"
+else
+    staging=$(mktemp "$support/.RectangleConfig.XXXXXX")
+    cp "$candidate" "$staging"
+    mv -n "$staging" "$target"
+    if [ -e "$staging" ]; then
+        printf 'A Rectangle import appeared concurrently; it was not overwritten.\n' >&2
+        exit 1
+    fi
+    staging=
+fi
+
+stamp_temp=$(mktemp "$state/.last-staged.XXXXXX")
+printf '%s\n' "$digest" > "$stamp_temp"
+mv "$stamp_temp" "$stamp"
+stamp_temp=
+printf 'Rectangle: configuration staged at %s\n' "$target"
+printf 'It will be offered on the next app launch. No app was started or restarted.\n'
+{{ end -}}
