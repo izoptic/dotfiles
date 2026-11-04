@@ -49,6 +49,10 @@ scrollback-limit-bytes = unlimited
 keybind = shift+page_up=scroll_page_up
 keybind = shift+page_down=scroll_page_down
 
+# Cycle tabs with Ctrl+Page Up/Down, matching WezTerm.
+keybind = ctrl+page_up=previous_tab
+keybind = ctrl+page_down=next_tab
+
 # Preserve the user's preferred WezTerm split orientation and pane navigation.
 keybind = super+alt+arrow_right=new_split:down
 keybind = super+alt+arrow_up=new_split:right
